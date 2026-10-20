@@ -1,0 +1,15 @@
+import type { NextRequest } from "next/server";
+
+import { updateSession } from "@/lib/supabase/proxy";
+
+export async function proxy(request: NextRequest) {
+  return updateSession(request);
+}
+
+export const config = {
+  matcher: [
+    // Todo menos archivos estáticos, imágenes y el cron.
+    // El cron no usa sesión de usuario: se protege con CRON_SECRET en la propia ruta.
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
+};
