@@ -1,14 +1,11 @@
 import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AgendaSection } from "@/components/agenda-section";
+import { AvisoGoogle } from "@/components/aviso-google";
+import { ConnectionsSection } from "@/components/connections-section";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 
 async function CorreoUsuario() {
@@ -22,7 +19,18 @@ async function CorreoUsuario() {
   );
 }
 
-export default function HomePage() {
+function Cargando({ titulo }: { titulo: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{titulo}</CardTitle>
+        <p className="text-sm text-muted-foreground">Cargando…</p>
+      </CardHeader>
+    </Card>
+  );
+}
+
+export default function HomePage({ searchParams }: PageProps<"/">) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex items-center justify-between gap-3">
@@ -44,20 +52,17 @@ export default function HomePage() {
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fase (a) lista</CardTitle>
-          <CardDescription>
-            El login con Google y la protección de acceso funcionan. En las
-            siguientes fases irán apareciendo aquí la agenda, los correos, las
-            tareas y las alertas.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Si ves esta pantalla con tu correo arriba, el inicio de sesión está
-          funcionando.
-        </CardContent>
-      </Card>
+      <Suspense fallback={null}>
+        <AvisoGoogle searchParams={searchParams} />
+      </Suspense>
+
+      <Suspense fallback={<Cargando titulo="Agenda" />}>
+        <AgendaSection />
+      </Suspense>
+
+      <Suspense fallback={<Cargando titulo="Conexiones" />}>
+        <ConnectionsSection />
+      </Suspense>
     </div>
   );
 }
