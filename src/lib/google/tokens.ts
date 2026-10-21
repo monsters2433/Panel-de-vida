@@ -82,13 +82,17 @@ export async function guardarRefreshToken(
   cache.delete(userId);
 }
 
-export async function obtenerEstadoIntegracion(userId: string) {
+/** Estado de una integración ("google" o "apple"). No devuelve nunca el token. */
+export async function obtenerEstadoIntegracion(
+  userId: string,
+  proveedor: "google" | "apple" = PROVEEDOR,
+) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("integrations")
     .select("refresh_token_cifrado, ultima_sincronizacion")
     .eq("user_id", userId)
-    .eq("proveedor", PROVEEDOR)
+    .eq("proveedor", proveedor)
     .maybeSingle();
   if (error) throw new Error(`No se pudo leer la integración: ${error.message}`);
 

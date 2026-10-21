@@ -15,7 +15,16 @@ import {
 import type { AnalisisDia, BloqueLibre, EventoAgenda } from "@/lib/agenda";
 import { cn } from "@/lib/utils";
 
-type Datos = AnalisisDia & { fecha: string; zonaHoraria: string };
+type AvisoFuente = {
+  fuente: "google" | "apple";
+  codigo: "reconectar" | "error";
+  detalle?: string;
+};
+type Datos = AnalisisDia & {
+  fecha: string;
+  zonaHoraria: string;
+  avisos?: AvisoFuente[];
+};
 type Estado =
   | { tipo: "ok"; datos: Datos }
   | { tipo: "error"; codigo: string; detalle?: string };
@@ -60,11 +69,12 @@ function BotonGoogle({ texto }: { texto: string }) {
 }
 
 function MensajeError({ codigo, detalle }: { codigo: string; detalle?: string }) {
-  if (codigo === "google_no_conectado") {
+  if (codigo === "google_no_conectado" || codigo === "sin_calendarios") {
     return (
       <div className="flex flex-col items-start gap-3 text-sm">
         <p className="text-muted-foreground">
-          Conecta tu cuenta de Google para ver aquí tu calendario.
+          Conecta Google Calendar o Apple Calendar para ver aquí tu agenda. Apple
+          se conecta desde la tarjeta Conexiones, más abajo.
         </p>
         <BotonGoogle texto="Conectar Google" />
       </div>
@@ -80,10 +90,19 @@ function MensajeError({ codigo, detalle }: { codigo: string; detalle?: string })
       </div>
     );
   }
-  if (codigo === "google_error") {
+  if (codigo === "apple_reconectar") {
     return (
       <p className="text-sm text-muted-foreground">
-        Google devolvió un error: {detalle ?? "sin detalle"}
+        iCloud rechazó la contraseña guardada. Vuelve a conectar Apple Calendar
+        desde la tarjeta Conexiones, más abajo.
+      </p>
+    );
+  }
+  if (codigo === "google_error" || codigo === "apple_error") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {codigo === "google_error" ? "Google" : "iCloud"} devolvió un error:{" "}
+        {detalle ?? "sin detalle"}
       </p>
     );
   }
@@ -93,6 +112,13 @@ function MensajeError({ codigo, detalle }: { codigo: string; detalle?: string })
       los registros de Vercel.
     </p>
   );
+}
+
+function textoAviso(a: AvisoFuente) {
+  const nombre = a.fuente === "google" ? "Google" : "Apple Calendar";
+  return a.codigo === "reconectar"
+    ? `${nombre}: hay que volver a conectarlo. Mientras tanto no se muestran sus eventos.`
+    : `${nombre}: no se pudo leer (${a.detalle ?? "error"}). Mientras tanto no se muestran sus eventos.`;
 }
 
 export function AgendaClient({
@@ -193,6 +219,16 @@ function DiaAgenda({ datos, tz }: { datos: Datos; tz: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {(datos.avisos ?? []).map((a) => (
+        <p
+          key={a.fuente}
+          role="status"
+          className="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+        >
+          {textoAviso(a)}
+        </p>
+      ))}
+
       <p className="text-sm text-muted-foreground">
         {reuniones === 0
           ? "Sin reuniones este día."
